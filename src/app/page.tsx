@@ -52,10 +52,16 @@ export default function Home() {
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Link href="/auth">
+              <Link href="/medications">
                 <Button size="lg" className="gap-2">
-                  <span>Get Started (Magic Link or Guest)</span>
+                  <span>My Medications</span>
                   <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/dose-log">
+                <Button size="lg" variant="secondary" className="gap-2">
+                  <Zap className="h-5 w-5" />
+                  <span>Today&apos;s Doses</span>
                 </Button>
               </Link>
               <div className="flex items-center gap-2 px-4 py-2 text-sm text-[hsl(var(--muted-foreground))] rounded-2xl bg-[hsl(var(--secondary))]">
