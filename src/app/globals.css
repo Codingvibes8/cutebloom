@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 44 26% 97%; /* #FAF8F5 warm cream */
+    --foreground: 140 12% 14%; /* #1F2822 deep forest slate */
+
+    --card: 0 0% 100%;
+    --card-foreground: 140 12% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 140 12% 14%;
+
+    --primary: 138 33% 32%; /* #376B46 calm botanical sage */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 22% 93%; /* #F2EFE9 warm oat */
+    --secondary-foreground: 140 12% 18%;
+
+    --muted: 42 16% 91%;
+    --muted-foreground: 140 8% 44%;
+
+    --accent: 265 24% 93%; /* #F0EDF5 soft lavender mist */
+    --accent-foreground: 266 32% 35%; /* #553E6D */
+
+    --terracotta: 17 62% 48%; /* gentle alert / controlled drug */
+    --terracotta-foreground: 0 0% 100%;
+
+    --destructive: 0 65% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 45 15% 88%;
+    --input: 45 15% 88%;
+    --ring: 138 33% 32%;
+
+    --radius: 1rem; /* rounded, organic feel */
+  }
+
+  .dark {
+    --background: 140 14% 9%; /* #121814 deep night moss */
+    --foreground: 45 15% 93%; /* #ECE9E2 soft cream text */
+
+    --card: 140 12% 13%; /* #1C231E */
+    --card-foreground: 45 15% 93%;
+
+    --popover: 140 12% 13%;
+    --popover-foreground: 45 15% 93%;
+
+    --primary: 138 36% 45%; /* #4A9C60 readable glowing sage */
+    --primary-foreground: 140 25% 8%;
+
+    --secondary: 140 10% 17%;
+    --secondary-foreground: 45 15% 90%;
+
+    --muted: 140 10% 18%;
+    --muted-foreground: 140 8% 65%;
+
+    --accent: 265 18% 22%;
+    --accent-foreground: 265 40% 85%;
+
+    --terracotta: 17 65% 55%;
+    --terracotta-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 140 10% 20%;
+    --input: 140 10% 20%;
+    --ring: 138 36% 45%;
+  }
+
+  /* Dyslexia friendly font mode */
+  .dyslexic-mode {
+    font-family: 'OpenDyslexic', 'Comic Sans MS', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    letter-spacing: 0.05em;
+    word-spacing: 0.1em;
+    line-height: 1.7;
+  }
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  min-height: 100vh;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ADHD Friendly Touch Targets */
+button, a, input, select {
+  touch-action: manipulation;
+}
+
+/* Gentle pulse animation for low-stimulus indicators */
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 4s ease-in-out infinite;
+}
