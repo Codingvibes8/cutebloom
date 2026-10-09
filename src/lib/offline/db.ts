@@ -62,6 +62,21 @@ export interface LocalPushSubscription {
   createdAt: number;
 }
 
+export interface LocalRefillTracker {
+  id: string;
+  medicationId: string;
+  currentQuantity: number;
+  unit: string;
+  daysSupplyRemaining: number;
+  requestByDate: string | null;
+  lastRefillDate: string | null;
+  controlledDrugExpiry: string | null;
+  earlyReminderDays: number;
+  notes: string | null;
+  syncStatus: "synced" | "pending_insert" | "pending_update" | "pending_delete";
+  updatedAt: number;
+}
+
 export interface GuestSettings {
   key: string;
   value: unknown;
@@ -73,6 +88,7 @@ class CuteBloomDatabase extends Dexie {
   dailyCheckins!: Table<LocalDailyCheckin, string>;
   focusSessions!: Table<LocalFocusSession, string>;
   pushSubscriptions!: Table<LocalPushSubscription, string>;
+  refillTrackers!: Table<LocalRefillTracker, string>;
   settings!: Table<GuestSettings, string>;
 
   constructor() {
@@ -91,6 +107,16 @@ class CuteBloomDatabase extends Dexie {
       dailyCheckins: "id, date, syncStatus, createdAt",
       focusSessions: "id, sessionType, syncStatus, createdAt",
       pushSubscriptions: "id, endpoint, isActive, createdAt",
+      settings: "key",
+    });
+    // Version 3: add refill trackers table
+    this.version(3).stores({
+      medications: "id, syncStatus, isActive, updatedAt",
+      doseLogs: "id, medicationId, scheduledTime, syncStatus, createdAt",
+      dailyCheckins: "id, date, syncStatus, createdAt",
+      focusSessions: "id, sessionType, syncStatus, createdAt",
+      pushSubscriptions: "id, endpoint, isActive, createdAt",
+      refillTrackers: "id, medicationId, syncStatus, updatedAt",
       settings: "key",
     });
   }
