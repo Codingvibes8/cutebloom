@@ -52,6 +52,16 @@ export interface LocalFocusSession {
   createdAt: number;
 }
 
+export interface LocalPushSubscription {
+  id: string;
+  endpoint: string;
+  keysP256dh: string;
+  keysAuth: string;
+  userAgent?: string;
+  isActive: boolean;
+  createdAt: number;
+}
+
 export interface GuestSettings {
   key: string;
   value: unknown;
@@ -62,6 +72,7 @@ class CuteBloomDatabase extends Dexie {
   doseLogs!: Table<LocalDoseLog, string>;
   dailyCheckins!: Table<LocalDailyCheckin, string>;
   focusSessions!: Table<LocalFocusSession, string>;
+  pushSubscriptions!: Table<LocalPushSubscription, string>;
   settings!: Table<GuestSettings, string>;
 
   constructor() {
@@ -71,6 +82,15 @@ class CuteBloomDatabase extends Dexie {
       doseLogs: "id, medicationId, scheduledTime, syncStatus, createdAt",
       dailyCheckins: "id, date, syncStatus, createdAt",
       focusSessions: "id, sessionType, syncStatus, createdAt",
+      settings: "key",
+    });
+    // Version 2: add push subscriptions table
+    this.version(2).stores({
+      medications: "id, syncStatus, isActive, updatedAt",
+      doseLogs: "id, medicationId, scheduledTime, syncStatus, createdAt",
+      dailyCheckins: "id, date, syncStatus, createdAt",
+      focusSessions: "id, sessionType, syncStatus, createdAt",
+      pushSubscriptions: "id, endpoint, isActive, createdAt",
       settings: "key",
     });
   }

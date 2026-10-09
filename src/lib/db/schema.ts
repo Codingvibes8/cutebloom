@@ -111,3 +111,32 @@ export const consentRecords = pgTable("consent_records", {
   policyVersion: text("policy_version").default("1.0").notNull(),
   grantedAt: timestamp("granted_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// 8. Push Subscriptions (Web Push API / VAPID)
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
+  endpoint: text("endpoint").notNull(),
+  keysP256dh: text("keys_p256dh").notNull(),
+  keysAuth: text("keys_auth").notNull(),
+  userAgent: text("user_agent"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 9. Reminder Events (tracks reminder state for escalation/snooze)
+export const reminderEvents = pgTable("reminder_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
+  medicationId: uuid("medication_id").references(() => medications.id, { onDelete: "cascade" }).notNull(),
+  scheduledTime: timestamp("scheduled_time", { withTimezone: true }).notNull(),
+  status: text("status").default("pending").notNull(), // pending, acknowledged, snoozed, escalated, missed
+  snoozeCount: integer("snooze_count").default(0).notNull(),
+  escalationCount: integer("escalation_count").default(0).notNull(),
+  lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  clientUuid: text("client_uuid").unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});

@@ -51,12 +51,23 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 NEXT_PUBLIC_APP_TIMEZONE=Europe/London
+
+# VAPID Keys for Web Push Notifications (Phase 3)
+# Generate with: npx web-push generate-vapid-keys
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-vapid-public-key
+VAPID_VAPID_PRIVATE_KEY=your-vapid-private-key
+VAPID_SUBJECT=mailto:hello@cutebloom.app
+
+# Cron secret for server-side reminder checker (optional but recommended)
+CRON_SECRET=your-random-secret-here
 ```
 
 ### 4. Supabase Database Migration
 To apply the Phase 1 schema and Row-Level Security (RLS) policies:
 1. Open your Supabase Dashboard -> **SQL Editor**.
-2. Run the SQL script located in [`supabase/migrations/20261009000000_phase1_initial_schema_and_rls.sql`](supabase/migrations/20261009000000_phase1_initial_schema_and_rls.sql).
+2. Run the SQL scripts located in [`supabase/migrations/`](supabase/migrations/):
+1. [`20261009000000_phase1_initial_schema_and_rls.sql`](supabase/migrations/20261009000000_phase1_initial_schema_and_rls.sql) — Core tables, RLS policies, indexes
+2. [`20261009000001_phase3_push_subscriptions.sql`](supabase/migrations/20261009000001_phase3_push_subscriptions.sql) — Push subscriptions and reminder events tables
 
 ### 5. Running Locally
 ```bash
@@ -69,8 +80,8 @@ Open [http://localhost:3000](http://localhost:3000) to view the app in your brow
 ## 🗺️ Roadmap & Phases
 
 - [x] **Phase 1: Foundation** — Project setup, design system (calm ADHD palette, accessible tokens), Supabase Auth SSR, database schema & RLS, offline Dexie store, PWA shell.
-- [ ] **Phase 2: Medications & Dose Logging** — Medication creation, shame-free dose logs, Dexie offline queue sync.
-- [ ] **Phase 3: Reminder Engine** — VAPID Web Push, persistent actions (`Taken`, `Snooze 10m`, `Skip`), DST/timezone scheduling.
+- [x] **Phase 2: Medications & Dose Logging** — Medication creation, shame-free dose logs, Dexie offline queue sync.
+- [x] **Phase 3: Reminder Engine** — VAPID Web Push, persistent actions (`Taken`, `Snooze 10m`, `Skip`), DST/timezone scheduling, escalation nudges, client-side scheduler, server-side cron endpoint.
 - [ ] **Phase 4: Refill Tracker & Check-in** — Controlled drug management & 15-second daily check-in.
 - [ ] **Phase 5: Focus Tools & Insights** — "Just Start" 5-minute timer, Pomodoro, and descriptive adherence charts.
 - [ ] **Phase 6: Prescriber Reports & Data Controls** — PDF/CSV clinical export, full GDPR data export & deletion.
