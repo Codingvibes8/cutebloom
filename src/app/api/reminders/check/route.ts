@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getDb } from "@/lib/db";
-import { medications, reminderEvents, pushSubscriptions } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { medications, pushSubscriptions } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { sendPushNotification } from "@/lib/push/vapid";
 import { getLondonDate, londonLocalToUtc } from "@/lib/push/notifications";
 
 /**
  * Check for due medication reminders and send push notifications.
- * 
+ *
  * This endpoint is designed to be called by a cron job or external scheduler
  * (e.g., Vercel Cron, GitHub Actions) every 5 minutes.
- * 
+ *
  * Authorization: requires a secret token in the Authorization header.
  * Set CRON_SECRET in your environment variables.
  */
@@ -37,11 +37,7 @@ export async function POST(request: NextRequest) {
     const activeMeds = await db
       .select()
       .from(medications)
-      .where(
-        and(
-          eq(medications.isActive, true)
-        )
-      );
+      .where(eq(medications.isActive, true));
 
     if (activeMeds.length === 0) {
       return NextResponse.json({ checked: 0, sent: 0, message: "No active medications" });
@@ -65,44 +61,11 @@ export async function POST(request: NextRequest) {
           continue; // Not due yet or too old
         }
 
-        // Check if we already have a reminder event for this
-        const existingEvents = await db
-          .select()
-          .from(reminderEvents)
-          .where(
-            and(
-              eq(reminderEvents.medicationId, med.id),
-              eq(reminderEvents.status, "pending"),
-              sql`${reminderEvents.scheduledTime} = ${scheduledUtc.toISOString()}`
-            )
-          )
-          .limit(1);
-
-        if (existingEvents.length > 0) {
-          continue; // Already tracking this reminder
-        }
-
-        // Create a reminder event
-        const clientUuid = crypto.randomUUID();
-        await db.insert(reminderEvents).values({
-          userId: med.userId,
-          medicationId: med.id,
-          scheduledTime: scheduledUtc,
-          status: "pending",
-          clientUuid,
-          lastReminderAt: now,
-        });
-
         // Get user's push subscriptions
         const subs = await db
           .select()
           .from(pushSubscriptions)
-          .where(
-            and(
-              eq(pushSubscriptions.userId, med.userId),
-              eq(pushSubscriptions.isActive, true)
-            )
-          );
+          .where(eq(pushSubscriptions.userId, med.userId));
 
         // Send push notifications
         for (const sub of subs) {

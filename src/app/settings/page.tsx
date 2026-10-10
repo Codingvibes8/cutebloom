@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { getReminderSettings } from "@/lib/actions/reminders";
 import { ReminderSettings } from "@/components/reminders/reminder-settings";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DyslexiaToggle } from "@/components/ui/dyslexia-toggle";
@@ -9,13 +11,20 @@ export const metadata: Metadata = {
   description: "Manage your CuteBloom preferences, reminders, and accessibility settings.",
 };
 
-export default function SettingsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: settings } = user ? await getReminderSettings() : { data: null };
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-6">
       <h1 className="text-2xl font-semibold">Settings</h1>
 
       {/* Reminders & Notifications */}
-      <ReminderSettings />
+      {settings && <ReminderSettings settings={settings} />}
 
       {/* Appearance */}
       <Card>

@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendPushNotification } from "@/lib/push/vapid";
 import { pushSendInputSchema } from "@/lib/validations/push";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { pushSubscriptions } from "@/lib/db/schema";
 
 /**
  * Send a push notification to a user's subscriptions.
- * 
+ *
  * Request body:
  * {
  *   "userId": "uuid" (optional if endpoint is provided),
@@ -50,27 +50,17 @@ export async function POST(request: NextRequest) {
       const subs = await db
         .select()
         .from(pushSubscriptions)
-        .where(
-          and(
-            eq(pushSubscriptions.endpoint, endpoint),
-            eq(pushSubscriptions.isActive, true)
-          )
-        );
+        .where(eq(pushSubscriptions.endpoint, endpoint));
       subscriptions = subs.map((s: typeof pushSubscriptions.$inferSelect) => ({
         endpoint: s.endpoint,
         keys: { p256dh: s.keysP256dh, auth: s.keysAuth },
       }));
     } else if (userId) {
-      // Send to all active subscriptions for a user
+      // Send to all subscriptions for a user
       const subs = await db
         .select()
         .from(pushSubscriptions)
-        .where(
-          and(
-            eq(pushSubscriptions.userId, userId),
-            eq(pushSubscriptions.isActive, true)
-          )
-        );
+        .where(eq(pushSubscriptions.userId, userId));
       subscriptions = subs.map((s: typeof pushSubscriptions.$inferSelect) => ({
         endpoint: s.endpoint,
         keys: { p256dh: s.keysP256dh, auth: s.keysAuth },
@@ -80,12 +70,7 @@ export async function POST(request: NextRequest) {
       const subs = await db
         .select()
         .from(pushSubscriptions)
-        .where(
-          and(
-            eq(pushSubscriptions.userId, user.id),
-            eq(pushSubscriptions.isActive, true)
-          )
-        );
+        .where(eq(pushSubscriptions.userId, user.id));
       subscriptions = subs.map((s: typeof pushSubscriptions.$inferSelect) => ({
         endpoint: s.endpoint,
         keys: { p256dh: s.keysP256dh, auth: s.keysAuth },
@@ -94,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     if (subscriptions.length === 0) {
       return NextResponse.json(
-        { error: "No active push subscriptions found" },
+        { error: "No push subscriptions found" },
         { status: 404 }
       );
     }
@@ -107,7 +92,7 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter((r) => r.success).length;
     const failureCount = results.length - successCount;
 
-    // Deactivate expired subscriptions
+    // Remove expired subscriptions
     const expiredEndpoints = results
       .map((r, i) => (!r.success && r.error === "Subscription expired" ? subscriptions[i].endpoint : null))
       .filter((ep): ep is string => ep !== null);
@@ -115,8 +100,7 @@ export async function POST(request: NextRequest) {
     if (expiredEndpoints.length > 0) {
       for (const ep of expiredEndpoints) {
         await db
-          .update(pushSubscriptions)
-          .set({ isActive: false, updatedAt: new Date() })
+          .delete(pushSubscriptions)
           .where(eq(pushSubscriptions.endpoint, ep));
       }
     }
@@ -125,7 +109,7 @@ export async function POST(request: NextRequest) {
       success: true,
       sent: successCount,
       failed: failureCount,
-      deactivated: expiredEndpoints.length,
+      removed: expiredEndpoints.length,
     });
   } catch (error) {
     console.error("[Push Send API]", error);

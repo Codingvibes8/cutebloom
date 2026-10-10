@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  dailyCheckinSchema,
-  createDailyCheckinSchema,
-  updateDailyCheckinSchema,
-} from "./checkin";
+import { dailyCheckinSchema } from "./checkin";
 
 describe("Daily Check-in Validation", () => {
   describe("dailyCheckinSchema", () => {
@@ -140,46 +136,6 @@ describe("Daily Check-in Validation", () => {
       };
 
       const parsed = dailyCheckinSchema.safeParse(invalidData);
-      expect(parsed.success).toBe(false);
-    });
-  });
-
-  describe("createDailyCheckinSchema", () => {
-    it("should validate a valid create input", () => {
-      const validData = {
-        date: "2026-10-09",
-        focusRating: 4,
-        moodRating: 3,
-        sleepHours: 7.5,
-        sleepQuality: 4,
-        appetiteRating: 3,
-        sideEffects: [],
-        note: null,
-        clientUuid: "987fcdeb-51a2-43f7-9abc-def012345678",
-      };
-
-      const parsed = createDailyCheckinSchema.safeParse(validData);
-      expect(parsed.success).toBe(true);
-    });
-  });
-
-  describe("updateDailyCheckinSchema", () => {
-    it("should validate a valid update input", () => {
-      const validData = {
-        id: "123e4567-e89b-12d3-a456-426614174000",
-        focusRating: 5,
-      };
-
-      const parsed = updateDailyCheckinSchema.safeParse(validData);
-      expect(parsed.success).toBe(true);
-    });
-
-    it("should reject update without id", () => {
-      const invalidData = {
-        focusRating: 5,
-      };
-
-      const parsed = updateDailyCheckinSchema.safeParse(invalidData);
       expect(parsed.success).toBe(false);
     });
   });

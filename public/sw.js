@@ -1,13 +1,16 @@
-// CuteBloom Service Worker - Offline First, Caching & Push Notifications
+// CuteBloom Service Worker - Offline First, Web Push & Notification Actions
 const CACHE_NAME = "cutebloom-cache-v1";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
   "/favicon.ico",
-  "/auth"
+  "/auth",
+  "/medications",
+  "/reminders",
+  "/refills",
+  "/checkin",
+  "/dose-log",
 ];
-
-// --- Install & Activate ---
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -32,8 +35,6 @@ self.addEventListener("activate", (event) => {
   );
   self.clients.claim();
 });
-
-// --- Fetch (Network-first for pages, cache-first for assets) ---
 
 self.addEventListener("fetch", (event) => {
   // Only handle GET requests
@@ -75,103 +76,138 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// --- Push Notifications ---
-
-self.addEventListener("push", (event) => {
-  let data = {};
-  try {
-    data = event.data ? event.data.json() : {};
-  } catch {
-    data = { title: "CuteBloom Reminder", body: event.data ? event.data.text() : "" };
-  }
-
-  const title = data.title || "CuteBloom Reminder";
-  const options = {
-    body: data.body || "Time for your medication",
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
-    tag: data.tag || "cutebloom-reminder",
-    requireInteraction: data.requireInteraction ?? true,
-    actions: data.actions || [
-      { action: "taken", title: "Taken" },
-      { action: "snooze", title: "Snooze 10m" },
-      { action: "skip", title: "Skip" },
-    ],
-    data: data.data || {},
-  };
-
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-// --- Notification Click Handling ---
+// ── Web Push Notification Actions ─────────────────────────────────
+// Handles Taken, Snooze, and Skip actions from notification buttons
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const action = event.action;
-  const data = event.notification.data || {};
+  const { action, notification } = event;
+  const data = notification.data || {};
+  const medicationId = data.medicationId;
+  const scheduledTime = data.scheduledTime;
+  const clientUuid = data.clientUuid;
 
-  if (action === "taken" || action === "snooze" || action === "skip") {
-    // Forward the action to the client app
+  // Helper to find or open the app
+  const openApp = () => {
+    const url = medicationId ? `/medications/${medicationId}/log` : "/dose-log";
     event.waitUntil(
-      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-        if (clients.length > 0) {
-          // Send to all open windows
-          clients.forEach((client) => {
+      clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+        // Focus existing window if available
+        for (const client of clientList) {
+          if ("focus" in client) {
+            client.focus();
             client.postMessage({
-              type: "notification-action",
-              action: action,
-              data: data,
+              type: "NOTIFICATION_ACTION",
+              action,
+              medicationId,
+              scheduledTime,
+              clientUuid,
             });
-          });
-        } else {
-          // No open window — open one and send the action
-          self.clients.openWindow("/").then((client) => {
-            if (client) {
-              client.postMessage({
-                type: "notification-action",
-                action: action,
-                data: data,
-              });
-            }
-          });
+            return;
+          }
         }
+        // Open new window
+        return clients.openWindow(url);
       })
     );
-  } else {
-    // Default click (no action button) — focus or open the app
+  };
+
+  switch (action) {
+    case "taken":
+      // Mark dose as taken
+      event.waitUntil(
+        clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+          for (const client of clientList) {
+            client.postMessage({
+              type: "NOTIFICATION_ACTION",
+              action: "taken",
+              medicationId,
+              scheduledTime,
+              clientUuid,
+            });
+          }
+        })
+      );
+      break;
+
+    case "snooze":
+      // Snooze for 10 minutes — schedule a new notification
+      event.waitUntil(
+        clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+          for (const client of clientList) {
+            client.postMessage({
+              type: "NOTIFICATION_ACTION",
+              action: "snooze",
+              medicationId,
+              scheduledTime,
+              clientUuid,
+            });
+          }
+        })
+      );
+      break;
+
+    case "skip":
+      // Mark dose as skipped
+      event.waitUntil(
+        clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+          for (const client of clientList) {
+            client.postMessage({
+              type: "NOTIFICATION_ACTION",
+              action: "skip",
+              medicationId,
+              scheduledTime,
+              clientUuid,
+            });
+          }
+        })
+      );
+      break;
+
+    default:
+      // Notification body clicked — open app
+      openApp();
+      break;
+  }
+});
+
+// ── Push Event (for future VAPID server push) ──────────────────────
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const title = data.title || "CuteBloom Reminder";
+    const options = {
+      body: data.body || "Time for your medication",
+      icon: "/favicon.ico",
+      badge: "/favicon.ico",
+      tag: data.tag || "cutebloom-reminder",
+      requireInteraction: true,
+      actions: [
+        { action: "taken", title: "Taken" },
+        { action: "snooze", title: "Snooze 10m" },
+        { action: "skip", title: "Skip" },
+      ],
+      data: data.data || {},
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch (err) {
+    // Fallback for non-JSON push data
     event.waitUntil(
-      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-        if (clients.length > 0) {
-          return clients[0].focus();
-        }
-        return self.clients.openWindow("/");
+      self.registration.showNotification("CuteBloom Reminder", {
+        body: event.data.text(),
+        icon: "/favicon.ico",
+        badge: "/favicon.ico",
+        requireInteraction: true,
+        actions: [
+          { action: "taken", title: "Taken" },
+          { action: "snooze", title: "Snooze 10m" },
+          { action: "skip", title: "Skip" },
+        ],
       })
     );
-  }
-});
-
-// --- Notification Close Tracking ---
-
-self.addEventListener("notificationclose", (event) => {
-  const data = event.notification.data || {};
-  // Notify client that the notification was dismissed without action
-  if (data.reminderKey) {
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      clients.forEach((client) => {
-        client.postMessage({
-          type: "notification-closed",
-          data: data,
-        });
-      });
-    });
-  }
-});
-
-// --- Message Handling (from client) ---
-
-self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
   }
 });

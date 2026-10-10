@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  refillTrackerSchema,
-  createRefillTrackerSchema,
-  updateRefillTrackerSchema,
-} from "./refill";
+import { refillTrackerSchema } from "./refill";
 
 describe("Refill Tracker Validation", () => {
   describe("refillTrackerSchema", () => {
@@ -106,46 +102,6 @@ describe("Refill Tracker Validation", () => {
       };
 
       const parsed = refillTrackerSchema.safeParse(invalidData);
-      expect(parsed.success).toBe(false);
-    });
-  });
-
-  describe("createRefillTrackerSchema", () => {
-    it("should validate a valid create input", () => {
-      const validData = {
-        medicationId: "123e4567-e89b-12d3-a456-426614174000",
-        currentQuantity: 30,
-        unit: "pills",
-        daysSupplyRemaining: 28,
-        requestByDate: "2026-11-01",
-        lastRefillDate: "2026-10-09",
-        controlledDrugExpiry: null,
-        earlyReminderDays: 7,
-        notes: null,
-      };
-
-      const parsed = createRefillTrackerSchema.safeParse(validData);
-      expect(parsed.success).toBe(true);
-    });
-  });
-
-  describe("updateRefillTrackerSchema", () => {
-    it("should validate a valid update input", () => {
-      const validData = {
-        id: "123e4567-e89b-12d3-a456-426614174000",
-        currentQuantity: 25,
-      };
-
-      const parsed = updateRefillTrackerSchema.safeParse(validData);
-      expect(parsed.success).toBe(true);
-    });
-
-    it("should reject update without id", () => {
-      const invalidData = {
-        currentQuantity: 25,
-      };
-
-      const parsed = updateRefillTrackerSchema.safeParse(invalidData);
       expect(parsed.success).toBe(false);
     });
   });

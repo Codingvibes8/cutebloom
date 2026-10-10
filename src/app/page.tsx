@@ -7,12 +7,12 @@ import {
   Clock,
   Sparkles,
   ShieldCheck,
-  Calendar,
-  Layers,
   ArrowRight,
-  Database,
-  CloudCheck,
   Zap,
+  Bell,
+  Package,
+  CheckCircle2,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -35,12 +35,12 @@ export default function Home() {
         {/* Medical disclaimer (UK Compliance) */}
         <MedicalDisclaimer />
 
-        {/* Hero Banner: Calm & Shame-Free Tone */}
+        {/* Hero Banner */}
         <section className="relative overflow-hidden rounded-3xl border border-[hsl(var(--border))] bg-gradient-to-br from-[hsl(var(--card))] via-[hsl(var(--background))] to-[hsl(var(--secondary))]/50 p-6 sm:p-10 shadow-xs">
           <div className="relative z-10 max-w-2xl space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))]/10 px-3 py-1 text-xs font-semibold text-[hsl(var(--primary))]">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>Phase 1 Foundation Live</span>
+              <span>Phase 3 & 4 Live</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[hsl(var(--foreground))]">
@@ -76,157 +76,144 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Architecture Status / Phase 1 Deliverables Overview */}
+        {/* Feature Cards — Phase 3 & 4 */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-[hsl(var(--foreground))]">
-                System Architecture & Foundation
-              </h2>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                Phase 1 verification: Supabase Auth, Drizzle ORM, RLS, and Dexie offline storage.
-              </p>
-            </div>
-            <Badge variant="default" className="text-xs">
-              Phase 1 Complete
-            </Badge>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Supabase & RLS Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]">
-                    <Database className="h-5 w-5" />
+          <h2 className="text-xl font-bold tracking-tight text-[hsl(var(--foreground))]">
+            Features
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Medications */}
+            <Link href="/medications">
+              <Card className="h-full transition-all hover:shadow-md hover:border-[hsl(var(--primary))]/30">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]">
+                      <Pill className="h-5 w-5" />
+                    </div>
+                    <Badge variant="default">Phase 2</Badge>
                   </div>
-                  <Badge variant="default">Connected</Badge>
-                </div>
-                <CardTitle className="pt-2 text-base">Supabase & RLS</CardTitle>
-                <CardDescription>
-                  Tenant isolation enforced on every table. Special-category UK GDPR health data safety.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-xs text-[hsl(var(--muted-foreground))] space-y-2">
-                <div className="flex items-center justify-between border-t border-[hsl(var(--border))] pt-2">
-                  <span>Supabase URL</span>
-                  <span className="font-mono text-[11px] text-[hsl(var(--foreground))]">zxplsdbnmo...</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>RLS Policies</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-medium">auth.uid() isolated</span>
-                </div>
-              </CardContent>
-            </Card>
+                  <CardTitle className="pt-2 text-base">Medications</CardTitle>
+                  <CardDescription>
+                    Manage your medications, schedules, and controlled drug tracking.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-xs text-[hsl(var(--muted-foreground))]">
+                  Add medications with custom schedules, track doses, and view history.
+                </CardContent>
+              </Card>
+            </Link>
 
-            {/* Offline-First & Dexie Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]/50 text-[hsl(var(--accent-foreground))]">
-                    <CloudCheck className="h-5 w-5" />
+            {/* Reminders */}
+            <Link href="/reminders">
+              <Card className="h-full transition-all hover:shadow-md hover:border-[hsl(var(--primary))]/30">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]/50 text-[hsl(var(--accent-foreground))]">
+                      <Bell className="h-5 w-5" />
+                    </div>
+                    <Badge variant="accent">Phase 3</Badge>
                   </div>
-                  <Badge variant="accent">Dexie Ready</Badge>
-                </div>
-                <CardTitle className="pt-2 text-base">Offline-First Engine</CardTitle>
-                <CardDescription>
-                  IndexedDB local caching with background synchronisation and zero data loss.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-xs text-[hsl(var(--muted-foreground))] space-y-2">
-                <div className="flex items-center justify-between border-t border-[hsl(var(--border))] pt-2">
-                  <span>Storage Engine</span>
-                  <span className="text-[hsl(var(--foreground))] font-medium">IndexedDB (Dexie)</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Offline Sync Status</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-medium">Automatic sync</span>
-                </div>
-              </CardContent>
-            </Card>
+                  <CardTitle className="pt-2 text-base">Reminder Engine</CardTitle>
+                  <CardDescription>
+                    VAPID Web Push notifications with Taken, Snooze, and Skip actions.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-xs text-[hsl(var(--muted-foreground))]">
+                  DST-safe scheduling, escalation nudges, and quiet hours.
+                </CardContent>
+              </Card>
+            </Link>
 
-            {/* UK Compliance & Accessibility Card */}
-            <Card className="sm:col-span-2 lg:col-span-1">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[hsl(var(--terracotta))]/15 text-[hsl(var(--terracotta))]">
-                    <ShieldCheck className="h-5 w-5" />
+            {/* Refill Tracker */}
+            <Link href="/refills">
+              <Card className="h-full transition-all hover:shadow-md hover:border-[hsl(var(--primary))]/30">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[hsl(var(--terracotta))]/15 text-[hsl(var(--terracotta))]">
+                      <Package className="h-5 w-5" />
+                    </div>
+                    <Badge variant="terracotta">Phase 4</Badge>
                   </div>
-                  <Badge variant="terracotta">WCAG 2.2 AA</Badge>
-                </div>
-                <CardTitle className="pt-2 text-base">Accessibility & Tone</CardTitle>
-                <CardDescription>
-                  44px+ tap targets, OpenDyslexic font support, Europe/London timezone, and shame-free copy.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-xs text-[hsl(var(--muted-foreground))] space-y-2">
-                <div className="flex items-center justify-between border-t border-[hsl(var(--border))] pt-2">
-                  <span>Timezone</span>
-                  <span className="text-[hsl(var(--foreground))] font-medium">Europe/London</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Disclaimer</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-medium">UK Compliant</span>
-                </div>
-              </CardContent>
-            </Card>
+                  <CardTitle className="pt-2 text-base">Refill Tracker</CardTitle>
+                  <CardDescription>
+                    Track prescription supplies with controlled drug 28-day awareness.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-xs text-[hsl(var(--muted-foreground))]">
+                  Early reminders, days-supply tracking, and CD expiry dates.
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Daily Check-in */}
+            <Link href="/checkin">
+              <Card className="h-full transition-all hover:shadow-md hover:border-[hsl(var(--primary))]/30">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                    <Badge variant="default">Phase 4</Badge>
+                  </div>
+                  <CardTitle className="pt-2 text-base">Daily Check-in</CardTitle>
+                  <CardDescription>
+                    Under 15 seconds. Focus, mood, sleep, and side effects.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-xs text-[hsl(var(--muted-foreground))]">
+                  Quick micro check-in with ratings and side-effect tracking.
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </section>
 
-        {/* Phase Roadmap Overview */}
+        {/* Today's Doses Quick Access */}
         <section className="space-y-4">
-          <h2 className="text-xl font-bold tracking-tight text-[hsl(var(--foreground))]">
-            Implementation Roadmap
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5 p-4 flex items-center gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--primary))] text-white font-bold text-xs">
-                1
-              </div>
-              <div>
-                <p className="font-semibold text-sm text-[hsl(var(--foreground))]">Phase 1: Foundation (Current)</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Next.js App Router, design system, Supabase Auth SSR, Drizzle schema, RLS, and PWA shell.
-                </p>
-              </div>
-            </div>
+          <Link href="/dose-log" className="block">
+            <Card className="transition-all hover:shadow-md hover:border-[hsl(var(--primary))]/30">
+              <CardContent className="flex items-center gap-4 p-5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]">
+                  <Calendar className="h-6 w-6" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-[hsl(var(--foreground))]">Today&apos;s Doses</h3>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    View and log today&apos;s scheduled medication doses.
+                  </p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-[hsl(var(--muted-foreground))]" />
+              </CardContent>
+            </Card>
+          </Link>
+        </section>
 
-            <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 flex items-center gap-3 opacity-80">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--secondary))] text-[hsl(var(--foreground))] font-bold text-xs">
-                2
+        {/* UK Compliance */}
+        <section>
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[hsl(var(--terracotta))]/15 text-[hsl(var(--terracotta))]">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <Badge variant="terracotta">WCAG 2.2 AA</Badge>
               </div>
-              <div>
-                <p className="font-semibold text-sm text-[hsl(var(--foreground))]">Phase 2: Medications & Dose Logging</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Medication manager, shame-free dose logger, and Dexie offline queue synchronization.
-                </p>
+              <CardTitle className="pt-2 text-base">UK Compliance & Accessibility</CardTitle>
+              <CardDescription>
+                44px+ tap targets, OpenDyslexic font support, Europe/London timezone, and shame-free copy.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-xs text-[hsl(var(--muted-foreground))] space-y-2">
+              <div className="flex items-center justify-between border-t border-[hsl(var(--border))] pt-2">
+                <span>Timezone</span>
+                <span className="text-[hsl(var(--foreground))] font-medium">Europe/London</span>
               </div>
-            </div>
-
-            <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 flex items-center gap-3 opacity-80">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--secondary))] text-[hsl(var(--foreground))] font-bold text-xs">
-                3
+              <div className="flex items-center justify-between">
+                <span>Disclaimer</span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-medium">UK Compliant</span>
               </div>
-              <div>
-                <p className="font-semibold text-sm text-[hsl(var(--foreground))]">Phase 3: Reminder Engine</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  VAPID Web Push notifications, actionable nudges (Taken/Snooze/Skip), and DST-safe scheduling.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 flex items-center gap-3 opacity-80">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--secondary))] text-[hsl(var(--foreground))] font-bold text-xs">
-                4
-              </div>
-              <div>
-                <p className="font-semibold text-sm text-[hsl(var(--foreground))]">Phase 4: Refill Tracker & Check-in</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Controlled drug single-issue 28-day tracking, early alerts, and &lt;15s daily micro check-in.
-                </p>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </section>
       </div>
     </main>

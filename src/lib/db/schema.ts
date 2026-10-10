@@ -112,7 +112,21 @@ export const consentRecords = pgTable("consent_records", {
   grantedAt: timestamp("granted_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// 8. Push Subscriptions (Web Push API / VAPID)
+// 8. Reminder Settings (Phase 3 — per-user notification preferences)
+export const reminderSettings = pgTable("reminder_settings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => profiles.id, { onDelete: "cascade" }).notNull().unique(),
+  notificationsEnabled: boolean("notifications_enabled").default(true).notNull(),
+  snoozeMinutes: integer("snooze_minutes").default(10).notNull(),
+  escalationEnabled: boolean("escalation_enabled").default(true).notNull(),
+  escalationMinutes: integer("escalation_minutes").default(30).notNull(),
+  quietHoursStart: text("quiet_hours_start"), // HH:mm
+  quietHoursEnd: text("quiet_hours_end"), // HH:mm
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 9. Push Subscriptions (Phase 3 — VAPID Web Push)
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
@@ -125,18 +139,14 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// 9. Reminder Events (tracks reminder state for escalation/snooze)
+// 10. Reminder Events (Phase 3 — tracks sent reminders for deduplication)
 export const reminderEvents = pgTable("reminder_events", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
   medicationId: uuid("medication_id").references(() => medications.id, { onDelete: "cascade" }).notNull(),
   scheduledTime: timestamp("scheduled_time", { withTimezone: true }).notNull(),
-  status: text("status").default("pending").notNull(), // pending, acknowledged, snoozed, escalated, missed
-  snoozeCount: integer("snooze_count").default(0).notNull(),
-  escalationCount: integer("escalation_count").default(0).notNull(),
+  status: text("status").notNull().default("pending"), // 'pending', 'sent', 'acknowledged', 'snoozed', 'skipped'
+  clientUuid: text("client_uuid"),
   lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
-  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
-  clientUuid: text("client_uuid").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

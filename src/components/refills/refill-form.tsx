@@ -2,350 +2,288 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, AlertTriangle, ShieldCheck, Info } from "lucide-react";
+import { Save, X, AlertTriangle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import {
-  createRefillTracker,
-  updateRefillTracker,
-} from "@/lib/actions/refills";
+import { createRefillTracker, updateRefillTracker } from "@/lib/actions/refills";
+import type { RefillTrackerInput } from "@/lib/validations/refill";
+
+interface Medication {
+  id: string;
+  name: string;
+  form: string;
+  strength: string | null;
+  is_controlled_drug: boolean;
+}
 
 interface RefillFormProps {
-  medications: Array<{
-    id: string;
-    name: string;
-    form: string;
-    strength: string | null;
-    is_controlled_drug: boolean;
-  }>;
-  defaultValues?: {
-    id: string;
-    medicationId: string;
-    currentQuantity: number;
-    unit: string;
-    daysSupplyRemaining: number;
-    requestByDate: string;
-    lastRefillDate: string;
-    controlledDrugExpiry: string;
-    earlyReminderDays: number;
-    notes: string;
-  };
+  medications: Medication[];
+  defaultValues?: Partial<RefillTrackerInput> & { id?: string };
   mode?: "create" | "edit";
 }
 
-export function RefillForm({
-  medications,
-  defaultValues,
-  mode = "create",
-}: RefillFormProps) {
-  const router = useRouter();
-  const [error, setError] = React.useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = React.useState<
-    Record<string, string>
-  >({});
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+const UNITS = ["pills", "tablets", "capsules", "ml", "patches", "inhalations", "doses"] as const;
 
-  const [medicationId, setMedicationId] = React.useState(
-    defaultValues?.medicationId || ""
-  );
+export function RefillForm({ medications, defaultValues, mode = "create" }: RefillFormProps) {
+  const router = useRouter();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [medicationId, setMedicationId] = React.useState(defaultValues?.medicationId ?? "");
   const [currentQuantity, setCurrentQuantity] = React.useState(
-    defaultValues?.currentQuantity?.toString() || "0"
+    defaultValues?.currentQuantity?.toString() ?? "0"
   );
-  const [unit, setUnit] = React.useState(defaultValues?.unit || "pills");
+  const [unit, setUnit] = React.useState(defaultValues?.unit ?? "pills");
   const [daysSupplyRemaining, setDaysSupplyRemaining] = React.useState(
-    defaultValues?.daysSupplyRemaining?.toString() || "0"
+    defaultValues?.daysSupplyRemaining?.toString() ?? "0"
   );
-  const [requestByDate, setRequestByDate] = React.useState(
-    defaultValues?.requestByDate || ""
-  );
-  const [lastRefillDate, setLastRefillDate] = React.useState(
-    defaultValues?.lastRefillDate || ""
-  );
+  const [requestByDate, setRequestByDate] = React.useState(defaultValues?.requestByDate ?? "");
+  const [lastRefillDate, setLastRefillDate] = React.useState(defaultValues?.lastRefillDate ?? today);
   const [controlledDrugExpiry, setControlledDrugExpiry] = React.useState(
-    defaultValues?.controlledDrugExpiry || ""
+    defaultValues?.controlledDrugExpiry ?? ""
   );
   const [earlyReminderDays, setEarlyReminderDays] = React.useState(
-    defaultValues?.earlyReminderDays?.toString() || "7"
+    defaultValues?.earlyReminderDays?.toString() ?? "7"
   );
-  const [notes, setNotes] = React.useState(defaultValues?.notes || "");
+  const [notes, setNotes] = React.useState(defaultValues?.notes ?? "");
+
+  const [loading, setLoading] = React.useState(false);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [serverError, setServerError] = React.useState<string | null>(null);
 
   const selectedMed = medications.find((m) => m.id === medicationId);
-  const isControlled = selectedMed?.is_controlled_drug || false;
+  const isControlledDrug = selectedMed?.is_controlled_drug ?? false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setFieldErrors({});
-    setIsSubmitting(true);
+    setLoading(true);
+    setErrors({});
+    setServerError(null);
 
-    const payload = {
+    const payload: RefillTrackerInput = {
       medicationId,
-      currentQuantity: parseInt(currentQuantity, 10) || 0,
+      currentQuantity: parseInt(currentQuantity) || 0,
       unit,
-      daysSupplyRemaining: parseInt(daysSupplyRemaining, 10) || 0,
+      daysSupplyRemaining: parseInt(daysSupplyRemaining) || 0,
       requestByDate: requestByDate || null,
       lastRefillDate: lastRefillDate || null,
-      controlledDrugExpiry: isControlled
-        ? controlledDrugExpiry || null
-        : null,
-      earlyReminderDays: parseInt(earlyReminderDays, 10) || 7,
+      controlledDrugExpiry: controlledDrugExpiry || null,
+      earlyReminderDays: parseInt(earlyReminderDays) || 7,
       notes: notes || null,
     };
 
     const result =
       mode === "edit" && defaultValues?.id
-        ? await updateRefillTracker({ ...payload, id: defaultValues.id })
+        ? await updateRefillTracker(defaultValues.id, payload)
         : await createRefillTracker(payload);
 
-    setIsSubmitting(false);
+    setLoading(false);
 
     if (result.error) {
-      setError(result.error);
-      return;
+      setServerError(result.error);
+    } else {
+      router.push("/refills");
+      router.refresh();
     }
-
-    router.push("/refills");
-    router.refresh();
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {mode === "create" ? "New Refill Tracker" : "Edit Refill Tracker"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Medication selection */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-              Medication <span className="text-[hsl(var(--destructive))]">*</span>
-            </label>
-            <div className="relative">
-              <select
-                value={medicationId}
-                onChange={(e) => setMedicationId(e.target.value)}
-                required
-                className="flex min-h-[48px] w-full appearance-none rounded-2xl border-2 border-[hsl(var(--input))] bg-[hsl(var(--card))] px-4 py-2 pr-10 text-base capitalize focus:border-[hsl(var(--ring))] focus:ring-2 focus:ring-[hsl(var(--ring))]/20"
-              >
-                <option value="">Select medication</option>
-                {medications.map((m) => (
-                  <option key={m.id} value={m.id} className="capitalize">
-                    {m.name} - {m.form}
-                    {m.strength ? ` (${m.strength})` : ""}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
-            </div>
-            {fieldErrors.medicationId && (
-              <p className="text-xs text-[hsl(var(--destructive))]">
-                {fieldErrors.medicationId}
-              </p>
-            )}
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Medication */}
+      <div className="space-y-1.5">
+        <label htmlFor="refill-med" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+          Medication <span className="text-[hsl(var(--destructive))]">*</span>
+        </label>
+        <div className="relative">
+          <select
+            id="refill-med"
+            value={medicationId}
+            onChange={(e) => setMedicationId(e.target.value)}
+            required
+            className="flex min-h-[48px] w-full appearance-none rounded-2xl border-2 border-[hsl(var(--input))] bg-[hsl(var(--card))] px-4 py-2 pr-10 text-base text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--ring))] focus:ring-2 focus:ring-[hsl(var(--ring))]/20"
+          >
+            <option value="">Select a medication</option>
+            {medications.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name} {m.strength ? `(${m.strength})` : ""} {m.is_controlled_drug ? "— Controlled Drug" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        {errors.medicationId && <p className="text-xs text-[hsl(var(--destructive))]">{errors.medicationId}</p>}
+      </div>
 
-          {/* Controlled drug info */}
-          {isControlled && (
-            <div className="flex items-start gap-3 rounded-2xl border border-[hsl(var(--terracotta))]/20 bg-[hsl(var(--terracotta))]/5 px-4 py-3">
-              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[hsl(var(--terracotta))]" />
-              <div className="text-sm">
-                <p className="font-medium text-[hsl(var(--terracotta))]">
-                  Controlled Drug
-                </p>
-                <p className="text-[hsl(var(--muted-foreground))]">
-                  In the UK, controlled drugs are typically issued as single-item
-                  prescriptions valid for 28 days. Set the prescription expiry
-                  date to receive timely reminders.
-                </p>
-              </div>
-            </div>
-          )}
+      {/* Controlled Drug Info */}
+      {isControlledDrug && (
+        <div className="rounded-2xl bg-[hsl(var(--terracotta))]/8 border border-[hsl(var(--terracotta))]/25 px-4 py-3 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[hsl(var(--terracotta))]" />
+          <p className="text-xs text-[hsl(var(--foreground))]">
+            <span className="font-semibold">Controlled Drug Mode: </span>
+            28-day single-issue prescription tracking. Set the prescription expiry date below.
+          </p>
+        </div>
+      )}
 
-          {/* Quantity and unit */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                Current quantity{" "}
-                <span className="text-[hsl(var(--destructive))]">*</span>
-              </label>
-              <Input
-                type="number"
-                min="0"
-                value={currentQuantity}
-                onChange={(e) => setCurrentQuantity(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                Unit
-              </label>
-              <div className="relative">
-                <select
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                  className="flex min-h-[48px] w-full appearance-none rounded-2xl border-2 border-[hsl(var(--input))] bg-[hsl(var(--card))] px-4 py-2 pr-10 text-base focus:border-[hsl(var(--ring))] focus:ring-2 focus:ring-[hsl(var(--ring))]/20"
-                >
-                  <option value="pills">pills</option>
-                  <option value="tablets">tablets</option>
-                  <option value="capsules">capsules</option>
-                  <option value="ml">ml</option>
-                  <option value="patches">patches</option>
-                  <option value="puffs">puffs</option>
-                  <option value="other">other</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
-              </div>
-            </div>
-          </div>
-
-          {/* Days supply */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-              Days of supply remaining{" "}
-              <span className="text-[hsl(var(--destructive))]">*</span>
-            </label>
-            <Input
-              type="number"
-              min="0"
-              value={daysSupplyRemaining}
-              onChange={(e) => setDaysSupplyRemaining(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Request by date */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-              Request refill by{" "}
-              <span className="ml-1 text-xs font-normal text-[hsl(var(--muted-foreground))]">
-                (optional)
-              </span>
-            </label>
-            <Input
-              type="date"
-              value={requestByDate}
-              onChange={(e) => setRequestByDate(e.target.value)}
-            />
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              We will remind you a few days before this date.
-            </p>
-          </div>
-
-          {/* Last refill date */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-              Last refill date{" "}
-              <span className="ml-1 text-xs font-normal text-[hsl(var(--muted-foreground))]">
-                (optional)
-              </span>
-            </label>
-            <Input
-              type="date"
-              value={lastRefillDate}
-              onChange={(e) => setLastRefillDate(e.target.value)}
-            />
-          </div>
-
-          {/* Controlled drug expiry */}
-          {isControlled && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                Prescription expiry (CD){" "}
-                <span className="ml-1 text-xs font-normal text-[hsl(var(--muted-foreground))]">
-                  (28 days from issue)
-                </span>
-              </label>
-              <Input
-                type="date"
-                value={controlledDrugExpiry}
-                onChange={(e) => setControlledDrugExpiry(e.target.value)}
-              />
-              <div className="flex items-start gap-2 text-xs text-[hsl(var(--muted-foreground))]">
-                <Info className="mt-0.5 h-3 w-3 shrink-0" />
-                <p>
-                  Controlled drug prescriptions in the UK expire 28 days after
-                  the issue date. You cannot obtain a refill after this date
-                  without a new prescription.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Early reminder days */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-              Remind me early (days before)
-            </label>
-            <Input
-              type="number"
-              min="0"
-              max="30"
-              value={earlyReminderDays}
-              onChange={(e) => setEarlyReminderDays(e.target.value)}
-            />
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              We will notify you this many days before your request-by date.
-            </p>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-              Notes{" "}
-              <span className="ml-1 text-xs font-normal text-[hsl(var(--muted-foreground))]">
-                (optional)
-              </span>
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              maxLength={500}
-              className="w-full resize-none rounded-2xl border-2 border-[hsl(var(--input))] bg-transparent px-4 py-3 text-sm focus:border-[hsl(var(--ring))] focus:ring-2 focus:ring-[hsl(var(--ring))]/20"
-              placeholder="Any notes about this prescription..."
-            />
-            <p className="text-right text-xs text-[hsl(var(--muted-foreground))]">
-              {notes.length}/500
-            </p>
-          </div>
-
-          {/* Error banner */}
-          {error && (
-            <div className="flex items-start gap-2 rounded-2xl border border-[hsl(var(--destructive))]/20 bg-[hsl(var(--destructive))]/10 px-4 py-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--destructive))]" />
-              <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/refills")}
-              className="flex-1"
+      {/* Quantity & Unit */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label htmlFor="refill-qty" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+            Current quantity <span className="text-[hsl(var(--destructive))]">*</span>
+          </label>
+          <Input
+            id="refill-qty"
+            type="number"
+            min={0}
+            value={currentQuantity}
+            onChange={(e) => setCurrentQuantity(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="refill-unit" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+            Unit
+          </label>
+          <div className="relative">
+            <select
+              id="refill-unit"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              className="flex min-h-[48px] w-full appearance-none rounded-2xl border-2 border-[hsl(var(--input))] bg-[hsl(var(--card))] px-4 py-2 pr-10 text-base text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--ring))] focus:ring-2 focus:ring-[hsl(var(--ring))]/20"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              {isSubmitting
-                ? "Saving..."
-                : mode === "create"
-                  ? "Create tracker"
-                  : "Save changes"}
-            </Button>
+              {UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+
+      {/* Days Supply Remaining */}
+      <div className="space-y-1.5">
+        <label htmlFor="refill-days" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+          Days of supply remaining <span className="text-[hsl(var(--destructive))]">*</span>
+        </label>
+        <Input
+          id="refill-days"
+          type="number"
+          min={0}
+          value={daysSupplyRemaining}
+          onChange={(e) => setDaysSupplyRemaining(e.target.value)}
+          required
+        />
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          Estimated days until you run out based on your daily usage
+        </p>
+      </div>
+
+      {/* Request By Date */}
+      <div className="space-y-1.5">
+        <label htmlFor="refill-request" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+          Request prescription by
+          <span className="ml-1 text-[hsl(var(--muted-foreground))] font-normal text-xs">(optional)</span>
+        </label>
+        <Input
+          id="refill-request"
+          type="date"
+          value={requestByDate}
+          onChange={(e) => setRequestByDate(e.target.value)}
+        />
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          You'll be reminded this many days before running out
+        </p>
+      </div>
+
+      {/* Last Refill Date */}
+      <div className="space-y-1.5">
+        <label htmlFor="refill-last" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+          Last refill date
+        </label>
+        <Input
+          id="refill-last"
+          type="date"
+          value={lastRefillDate}
+          onChange={(e) => setLastRefillDate(e.target.value)}
+        />
+      </div>
+
+      {/* Controlled Drug Expiry */}
+      {isControlledDrug && (
+        <div className="space-y-1.5">
+          <label htmlFor="refill-cd-expiry" className="text-sm font-semibold text-[hsl(var(--foreground))] flex items-center gap-2">
+            <Shield className="h-4 w-4 text-[hsl(var(--terracotta))]" />
+            Prescription expiry date
+          </label>
+          <Input
+            id="refill-cd-expiry"
+            type="date"
+            value={controlledDrugExpiry}
+            onChange={(e) => setControlledDrugExpiry(e.target.value)}
+          />
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Controlled drug prescriptions are valid for 28 days from issue date
+          </p>
+        </div>
+      )}
+
+      {/* Early Reminder Days */}
+      <div className="space-y-1.5">
+        <label htmlFor="refill-reminder" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+          Early reminder (days before running out)
+        </label>
+        <Input
+          id="refill-reminder"
+          type="number"
+          min={0}
+          max={30}
+          value={earlyReminderDays}
+          onChange={(e) => setEarlyReminderDays(e.target.value)}
+        />
+      </div>
+
+      {/* Notes */}
+      <div className="space-y-1.5">
+        <label htmlFor="refill-notes" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+          Notes
+          <span className="ml-1 text-[hsl(var(--muted-foreground))] font-normal text-xs">(optional)</span>
+        </label>
+        <textarea
+          id="refill-notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          placeholder="e.g. Pharmacy name, prescription number, collection notes..."
+          maxLength={500}
+          className="flex min-h-[80px] w-full rounded-2xl border-2 border-[hsl(var(--input))] bg-transparent px-4 py-3 text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:border-[hsl(var(--ring))] focus:ring-2 focus:ring-[hsl(var(--ring))]/20 resize-none"
+        />
+        <p className="text-xs text-[hsl(var(--muted-foreground))] text-right">{notes.length}/500</p>
+      </div>
+
+      {/* Server Error */}
+      {serverError && (
+        <div className="rounded-2xl bg-[hsl(var(--destructive))]/10 border border-[hsl(var(--destructive))]/20 px-4 py-3">
+          <p className="text-sm text-[hsl(var(--destructive))] font-medium">{serverError}</p>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-2">
+        <Button type="submit" disabled={loading} className="flex-1 gap-2">
+          <Save className="h-4 w-4" />
+          {loading ? "Saving..." : mode === "edit" ? "Save changes" : "Add Refill Tracker"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+          disabled={loading}
+          className="gap-2"
+        >
+          <X className="h-4 w-4" />
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }
